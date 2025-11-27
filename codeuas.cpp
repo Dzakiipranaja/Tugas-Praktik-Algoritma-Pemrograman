@@ -13,113 +13,134 @@ struct Jadwal
     bool bentrok = false;
 };
 
-// --- Fungsi bantu validasi hari ---
-bool validHari(string hari)
+
+int cekHari(string hari)
 {
-    string daftarHari[5] = {"Senin", "Selasa", "Rabu", "Kamis", "Jumat"};
-    for (int i = 0; i < 5; i++)
-    {
-        if (hari == daftarHari[i])
-            return true;
-    }
-    return false;
+    string d[6] = {"Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"};
+    for (int i = 0; i < 6; i++)
+        if (hari == d[i])
+            return i;
+    return -1;
 }
 
-// --- Fungsi bantu validasi format jam (hh:mm) ---
-bool validJam(string jam)
+
+int parseMenit(string jam)
 {
     if (jam.size() != 5 || jam[2] != ':')
-        return false;
-    string hh = jam.substr(0, 2);
-    string mm = jam.substr(3, 2);
-    for (char c : hh + mm)
-    {
-        if (!isdigit(c))
-            return false;
-    }
-    int jamInt = stoi(hh);
-    int menitInt = stoi(mm);
-    return (jamInt >= 0 && jamInt <= 23 && menitInt >= 0 && menitInt <= 59);
+        return -1;
+    if (!isdigit(jam[0]) || !isdigit(jam[1]) ||
+        !isdigit(jam[3]) || !isdigit(jam[4]))
+        return -1;
+
+    int hh = stoi(jam.substr(0, 2));
+    int mm = stoi(jam.substr(3, 2));
+
+    if (hh < 0 || hh > 23 || mm < 0 || mm > 59)
+        return -1;
+
+    return hh * 60 + mm;
 }
 
-// --- Fungsi ubah jam ke menit ---
-int konversiJamKeMenit(string jam)
+
+
+void inputSatuJadwal(Jadwal &x)
 {
-    int jamInt = stoi(jam.substr(0, 2));
-    int menitInt = stoi(jam.substr(3, 2));
-    return jamInt * 60 + menitInt;
+
+    do
+    {
+        cout << "Nama Kelas (contoh TI K): ";
+        getline(cin, x.namaKelas);
+
+        if (x.namaKelas.empty())
+            cout << "Nama kelas tidak boleh kosong!\n";
+
+    } while (x.namaKelas.empty());
+
+    do
+    {
+        cout << "Hari (contoh : Senin): ";
+        getline(cin, x.hari);
+        if (cekHari(x.hari) == -1)
+            cout << "Hari tidak valid!\n";
+    } while (cekHari(x.hari) == -1);
+
+    do
+    {
+        cout << "Jam Mulai (hh:mm): ";
+        getline(cin, x.jamMulai);
+    } while (parseMenit(x.jamMulai) == -1);
+
+    do
+    {
+        cout << "Jam Selesai (hh:mm): ";
+        getline(cin, x.jamSelesai);
+
+        int mulai = parseMenit(x.jamMulai);
+        int selesai = parseMenit(x.jamSelesai);
+
+        if (selesai == -1 || selesai <= mulai)
+            cout << "Jam selesai tidak valid!\n";
+
+    } while (parseMenit(x.jamSelesai) == -1 ||
+             parseMenit(x.jamSelesai) <= parseMenit(x.jamMulai));
+
+    do
+    {
+        cout << "Ruang (contoh : RF 7): ";
+        getline(cin, x.ruang);
+
+        if (x.ruang.empty())
+            cout << "Ruang tidak boleh kosong!\n";
+
+    } while (x.ruang.empty());
 }
 
-// --- Input jadwal dengan validasi ---
+
+
 void inputJadwal(Jadwal data[], int &n)
 {
     cout << "Masukkan jumlah jadwal: ";
-    while (!(cin >> n) || n <= 0)
-    {
-        cout << "Input tidak valid! Masukkan angka positif: ";
-        cin.clear();
-        cin.ignore(10000, '\n');
-    }
+    cin >> n;
     cin.ignore();
 
     for (int i = 0; i < n; i++)
     {
         cout << "\nData ke-" << i + 1 << endl;
-
-        cout << "Nama Kelas   : ";
-        getline(cin, data[i].namaKelas);
-
-        // Validasi hari
-        do
-        {
-            cout << "Hari (Senin-Sabtu): ";
-            getline(cin, data[i].hari);
-            if (!validHari(data[i].hari))
-                cout << "❌ Hari tidak valid! Coba lagi.\n";
-        } while (!validHari(data[i].hari));
-
-        // Validasi jam mulai
-        do
-        {
-            cout << "Jam Mulai (hh:mm): ";
-            getline(cin, data[i].jamMulai);
-            if (!validJam(data[i].jamMulai))
-                cout << "❌ Format jam salah! Gunakan format hh:mm (contoh: 08:30)\n";
-        } while (!validJam(data[i].jamMulai));
-
-        // Validasi jam selesai
-        do
-        {
-            cout << "Jam Selesai (hh:mm): ";
-            getline(cin, data[i].jamSelesai);
-            if (!validJam(data[i].jamSelesai))
-                cout << " Format jam salah! Gunakan format hh:mm (contoh: 10:00)\n";
-            else if (konversiJamKeMenit(data[i].jamSelesai) <= konversiJamKeMenit(data[i].jamMulai))
-                cout << " Jam selesai harus lebih besar dari jam mulai!\n";
-            else
-                break;
-        } while (true);
-
-        cout << "Ruang        : ";
-        getline(cin, data[i].ruang);
+        inputSatuJadwal(data[i]);
     }
 }
 
-// --- Deteksi bentrok ---
+
+
+int findIndex(Jadwal data[], int n, string key)
+{
+    for (int i = 0; i < n; i++)
+        if (data[i].namaKelas == key)
+            return i;
+    return -1;
+}
+
+
+
 void deteksiBentrok(Jadwal data[], int n)
 {
+    for (int i = 0; i < n; i++)
+        data[i].bentrok = false;
+
     for (int i = 0; i < n; i++)
     {
         for (int j = i + 1; j < n; j++)
         {
+
             if (data[i].hari == data[j].hari && data[i].ruang == data[j].ruang)
             {
-                int mulai1 = konversiJamKeMenit(data[i].jamMulai);
-                int selesai1 = konversiJamKeMenit(data[i].jamSelesai);
-                int mulai2 = konversiJamKeMenit(data[j].jamMulai);
-                int selesai2 = konversiJamKeMenit(data[j].jamSelesai);
 
-                if (mulai1 < selesai2 && selesai1 > mulai2)
+                int m1 = parseMenit(data[i].jamMulai);
+                int s1 = parseMenit(data[i].jamSelesai);
+                int m2 = parseMenit(data[j].jamMulai);
+                int s2 = parseMenit(data[j].jamSelesai);
+
+                if (m1 < s2 && s1 > m2)
                 {
                     data[i].bentrok = true;
                     data[j].bentrok = true;
@@ -129,77 +150,170 @@ void deteksiBentrok(Jadwal data[], int n)
     }
 }
 
-// --- Urutan hari ---
-int urutanHari(string hari)
-{
-    string daftarHari[6] = {"Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"};
-    for (int i = 0; i < 6; i++)
-    {
-        if (hari == daftarHari[i])
-            return i;
-    }
-    return 7;
-}
 
-// --- Bubble sort berdasarkan hari & jam mulai ---
+
 void bubbleSortJadwal(Jadwal data[], int n)
 {
     for (int i = 0; i < n - 1; i++)
     {
         for (int j = 0; j < n - i - 1; j++)
         {
-            int hari1 = urutanHari(data[j].hari);
-            int hari2 = urutanHari(data[j + 1].hari);
 
-            if (hari1 > hari2 ||
-                (hari1 == hari2 && konversiJamKeMenit(data[j].jamMulai) > konversiJamKeMenit(data[j + 1].jamMulai)))
-            {
+            int h1 = cekHari(data[j].hari);
+            int h2 = cekHari(data[j + 1].hari);
+
+            if (h1 > h2 ||
+                (h1 == h2 && parseMenit(data[j].jamMulai) >
+                                 parseMenit(data[j + 1].jamMulai)))
                 swap(data[j], data[j + 1]);
-            }
         }
     }
 }
 
-// --- Tampilkan hasil ---
+
+
 void tampilJadwal(Jadwal data[], int n)
 {
-    cout << "\n=== Daftar Jadwal Terurut (Tanpa Bentrok) ===\n";
+    deteksiBentrok(data, n);
+    bubbleSortJadwal(data, n);
+
+    cout << "\n=== JADWAL TERURUT ===\n";
     int no = 1;
     for (int i = 0; i < n; i++)
-    {
         if (!data[i].bentrok)
-        {
             cout << no++ << ". " << data[i].namaKelas << " | " << data[i].hari
                  << " | " << data[i].jamMulai << "-" << data[i].jamSelesai
                  << " | " << data[i].ruang << endl;
-        }
-    }
 
-    cout << "\n=== Jadwal Bentrok Terdeteksi ===\n";
-    bool adaBentrok = false;
+    cout << "\n=== JADWAL BENTROK ===\n";
+    bool ada = false;
     for (int i = 0; i < n; i++)
-    {
         if (data[i].bentrok)
         {
             cout << "- " << data[i].namaKelas << " (" << data[i].hari << ", "
-                 << data[i].ruang << ", " << data[i].jamMulai << "-" << data[i].jamSelesai << ")" << endl;
-            adaBentrok = true;
+                 << data[i].ruang << ", " << data[i].jamMulai << "-"
+                 << data[i].jamSelesai << ")\n";
+            ada = true;
         }
-    }
-    if (!adaBentrok)
+    if (!ada)
         cout << "Tidak ada bentrok.\n";
 }
 
-// --- Main ---
+
+void searchJadwal(Jadwal data[], int n)
+{
+    cin.ignore();
+    string key;
+    cout << "Masukkan nama kelas: ";
+    getline(cin, key);
+
+    int idx = findIndex(data, n, key);
+    if (idx == -1)
+        cout << "Tidak ditemukan.\n";
+    else
+        cout << "- " << data[idx].namaKelas << " | " << data[idx].hari
+             << " | " << data[idx].jamMulai << "-" << data[idx].jamSelesai
+             << " | " << data[idx].ruang << endl;
+}
+
+
+void editJadwal(Jadwal data[], int n)
+{
+    cin.ignore();
+    string key;
+    cout << "Masukkan nama kelas yang ingin diedit: ";
+    getline(cin, key);
+
+    int idx = findIndex(data, n, key);
+    if (idx == -1)
+    {
+        cout << "Tidak ditemukan!\n";
+        return;
+    }
+
+    inputSatuJadwal(data[idx]);
+    cout << "Berhasil diperbarui!\n";
+}
+
+
+void tambahJadwal(Jadwal data[], int &n)
+{
+    cin.ignore();
+    cout << "\n=== Tambah Jadwal ===\n";
+    inputSatuJadwal(data[n]);
+    n++;
+    cout << "Jadwal berhasil ditambahkan!\n";
+}
+
+
+void hapusJadwal(Jadwal data[], int &n)
+{
+    cin.ignore();
+    string key;
+    cout << "Masukkan nama kelas yang akan dihapus: ";
+    getline(cin, key);
+
+    int idx = findIndex(data, n, key);
+    if (idx == -1)
+    {
+        cout << "Tidak ditemukan!\n";
+        return;
+    }
+
+    for (int i = idx; i < n - 1; i++)
+        data[i] = data[i + 1];
+
+    n--;
+    cout << "Jadwal berhasil dihapus!\n";
+}
+
+
 int main()
 {
     Jadwal data[50];
     int n;
+    int pilihan;
 
     inputJadwal(data, n);
-    deteksiBentrok(data, n);
-    bubbleSortJadwal(data, n);
-    tampilJadwal(data, n);
+
+    do
+    {
+        cout << "\n=== MENU ===\n";
+        cout << "1. Tampilkan Jadwal\n";
+        cout << "2. Cari Jadwal\n";
+        cout << "3. Edit Jadwal\n";
+        cout << "4. Tambah Jadwal\n";
+        cout << "5. Hapus Jadwal\n";
+        cout << "0. Keluar\n";
+        cout << "Pilih: ";
+        cin >> pilihan;
+
+        switch (pilihan)
+        {
+        case 1:
+            tampilJadwal(data, n);
+            break;
+        case 2:
+            searchJadwal(data, n);
+            break;
+        case 3:
+            editJadwal(data, n);
+            break;
+        case 4:
+            tambahJadwal(data, n);
+            break;
+        case 5:
+            hapusJadwal(data, n);
+            break;
+        case 0:
+            cout << "Keluar...\n";
+            break;
+        default:
+            cout << "Pilihan tidak valid!\n";
+            break;
+        }
+
+    } while (pilihan != 0);
 
     return 0;
 }
